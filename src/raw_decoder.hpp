@@ -40,7 +40,7 @@ namespace zmq
 {
 
     //  Decoder for 0MQ v1 framing protocol. Converts data stream into messages.
-
+	//½âÂëÆ÷
     class raw_decoder_t : public i_decoder
     {
     public:

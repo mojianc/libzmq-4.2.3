@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright (c) 2007-2016 Contributors as noted in the AUTHORS file
 
     This file is part of libzmq, the ZeroMQ core engine in C++.
@@ -39,7 +39,7 @@ zmq::reaper_t::reaper_t (class ctx_t *ctx_, uint32_t tid_) :
     sockets (0),
     terminating (false)
 {
-    poller = new (std::nothrow) poller_t (*ctx_);
+    poller = new (std::nothrow) poller_t (*ctx_); //创建多路复用器
     alloc_assert (poller);
 
     if (mailbox.get_fd () != retired_fd) {

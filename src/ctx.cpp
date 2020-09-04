@@ -341,10 +341,10 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
         slots [term_tid] = &term_mailbox;
 
         //  Create the reaper thread.
-        reaper = new (std::nothrow) reaper_t (this, reaper_tid);
+        reaper = new (std::nothrow) reaper_t (this, reaper_tid); //创建reaper_t
         alloc_assert (reaper);
-        slots [reaper_tid] = reaper->get_mailbox ();
-        reaper->start ();
+        slots [reaper_tid] = reaper->get_mailbox (); //记录邮箱
+        reaper->start (); //启动线程，进入loop循环
 
         //  Create I/O thread objects and launch them.
         for (int i = 2; i != ios + 2; i++) {

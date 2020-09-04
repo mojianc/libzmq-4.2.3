@@ -96,7 +96,7 @@ void zmq::tcp_listener_t::in_event ()
         socket->event_accept_failed (endpoint, zmq_errno());
         return;
     }
-
+	//对网络进行优化，禁用nagle
     int rc = tune_tcp_socket (fd);
     rc = rc | tune_tcp_keepalives (fd, options.tcp_keepalive, options.tcp_keepalive_cnt,
         options.tcp_keepalive_idle, options.tcp_keepalive_intvl);

@@ -51,6 +51,7 @@ int zmq::tune_tcp_socket (fd_t s_)
     //  so using Nagle wouldn't improve throughput in anyway, but it would
     //  hurt latency.
     int nodelay = 1;
+	//禁用nagle和延迟ack
     int rc = setsockopt (s_, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
         sizeof (int));
     tcp_assert_tuning_error (s_, rc);
@@ -194,7 +195,7 @@ int zmq::tune_tcp_maxrt (fd_t sockfd_, int timeout_)
  int zmq::tcp_write (fd_t s_, const void *data_, size_t size_)
 {
 #ifdef ZMQ_HAVE_WINDOWS
-
+    //通过socket发送数据
     int nbytes = send (s_, (char*) data_, (int) size_, 0);
 
     //  If not a single byte can be written to the socket in non-blocking mode

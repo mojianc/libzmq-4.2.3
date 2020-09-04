@@ -957,7 +957,7 @@ int zmq::socket_base_t::connect (const char *addr_)
     }
 #endif
 
-    //  Create session.
+    //  Create session. io_thread的mailbox的fd会赋值给session
     session_base_t *session = session_base_t::create (io_thread, true, this,
         options, paddr);
     errno_assert (session);

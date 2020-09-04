@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright (c) 2007-2016 Contributors as noted in the AUTHORS file
 
     This file is part of libzmq, the ZeroMQ core engine in C++.
@@ -76,11 +76,11 @@ namespace zmq
         //  List of active timers.
         struct timer_info_t
         {
-            zmq::i_poll_events *sink;
-            int id;
+            zmq::i_poll_events *sink; //监测的事件
+            int id;                   //事件id
         };
         typedef std::multimap <uint64_t, timer_info_t> timers_t;
-        timers_t timers;
+        timers_t timers;               //超时队列
 
         //  Load of the poller. Currently the number of file descriptors
         //  registered.

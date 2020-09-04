@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright (c) 2007-2016 Contributors as noted in the AUTHORS file
 
     This file is part of libzmq, the ZeroMQ core engine in C++.
@@ -79,6 +79,7 @@ zmq::select_t::handle_t zmq::select_t::add_fd (fd_t fd_, i_poll_events *events_)
     wsa_assert (family != AF_UNSPEC);
     family_entry_t &family_entry = family_entries [family];
 #endif
+	//将fd_加入到select()中
     family_entry.fd_entries.push_back (fd_entry);
     FD_SET (fd_, &family_entry.fds_set.error);
 
@@ -138,7 +139,7 @@ void zmq::select_t::trigger_events (const fd_entries_t &fd_entries_,
         if (is_retired_fd (current_fd_entry) || event_count_ == 0)
             continue;
 
-        if (FD_ISSET (current_fd_entry.fd, &local_fds_set_.error)) {
+        if (FD_ISSET (current_fd_entry.fd, &local_fds_set_.error)) { //判断描述符fd是否在给定的描述符集fdset中，通常配合select函数使用;当描述符fd在描述符集fdset中返回非零值，否则，返回零
             current_fd_entry.events->in_event ();
             --event_count_;
         }
