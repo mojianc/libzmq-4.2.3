@@ -1,0 +1,306 @@
+void *requester = zmq_socket(context, ZMQ_REQ); //创建socket
+   |--zmq::socket_base_t *s = ctx->create_socket (type_);
+       |--zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
+	       |--reaper = new (std::nothrow) reaper_t (this, reaper_tid);   //reaper_t中包含mailbox和poller_t 
+		       |--poller = new (std::nothrow) poller_t (*ctx_);   //poller_t是对epoll的封装
+			   |--mailbox_handle = poller->add_fd (mailbox.get_fd (), this); //将mailbox的read socket放入select
+			   |--slots [reaper_tid] = reaper->get_mailbox ();  //slot记录主线程id对应的mailbox，reaper_tid初始化为1
+		   |--reaper->start ();  //启动线程
+		       |-- poller->start ();
+			      |--void zmq::select_t::start ()
+				     |-- ctx.start_thread (worker, worker_routine, this); //thread_t worker 为select中的成员变量
+					   |--void zmq::ctx_t::start_thread (thread_t &thread_, thread_fn *tfn_, void *arg_) const  //arg_为上一步传进来的this
+					      |--thread_.start(tfn_, arg_); //tfn_为静态函数zmq::select_t::worker_routine (void *arg_)，arg_为select_t
+						     |--void zmq::thread_t::start (thread_fn *tfn_, void *arg_)
+							    |--tfn = tfn_;   // tfn_为zmq::select_t::worker_routine (void *arg_)
+                                   arg = arg_;   //arg_为select_t
+							    |--descriptor = (HANDLE) _beginthreadex (NULL, 0, &::thread_routine, this, 0 , NULL); //windows下启动线程
+							    //起的这条线程会不断loop循环，调用的静态线程函数worker_routine()传入的参数为select，select在初始化的时候加入，不断的检测read和write事件
+		   |--//  Create I/O thread objects and launch them.
+				for (int i = 2; i != ios + 2; i++) {
+					io_thread_t *io_thread = new (std::nothrow) io_thread_t (this, i);  //创建io_thread_t线程并启动
+					alloc_assert (io_thread);
+					io_threads.push_back (io_thread);
+					slots [i] = io_thread->get_mailbox ();
+					io_thread->start ();
+				}
+zmq_socket做了什么？
+1. 创建reaper，并启动线程reaper->start ()
+2. 创建多个io_thread_t
+
+
+mailbox循环处理cmd
+static unsigned int __stdcall thread_routine (void *arg_)    //线程
+    |-- zmq::thread_t *self = (zmq::thread_t*) arg_;  //获取参数
+        self->tfn (self->arg);
+		|--void zmq::select_t::worker_routine (void *arg_)
+             ((select_t *) arg_)->loop ();
+			|--void zmq::select_t::loop ()
+			    |-- select_family_entry (family_entry, 0, timeout > 0, tv);
+				    |-- int rc = select (max_fd_, &local_fds_set.read, &local_fds_set.write, &local_fds_set.error, use_timeout_ ? &tv_ : NULL);
+				    |--trigger_events (fd_entries, local_fds_set, rc); //通过FD_ISSET判断是否有读写事件
+					   |--current_fd_entry.events->in_event ();
+					       |--void zmq::io_thread_t::in_event ()
+						      {
+							       command_t cmd;
+									int rc = mailbox.recv (&cmd, 0); //获取cmd
+									while (rc == 0 || errno == EINTR) {
+										if (rc == 0)
+											cmd.destination->process_command (cmd); //处理cmd，在处理消息的过程中可能还会创建cmd，cmd.destination会调用到目的对象的函数
+										rc = mailbox.recv (&cmd, 0);  //再次获取消息，通过while循环，将消息全部处理完
+									}
+							  }
+
+family_entry_t{
+    fd_entries_t fd_entries;
+    fds_set_t{
+		fd_set read;
+		fd_set write;
+		fd_set error;
+	}
+    bool retired;
+}
+ typedef std::vector<fd_entry_t> fd_entries_t;
+ fd_entry_t{
+     fd_t fd;
+     zmq::i_poll_events *events;
+ }
+ struct fds_set_t
+{
+    fd_set read;
+    fd_set write;
+    fd_set error;
+};
+typedef std::map<u_short, family_entry_t> family_entries_t;
+family_entries_t family_entries;
+
+ zmq::select_t::handle_t zmq::select_t::add_fd (fd_t fd_, i_poll_events *events_)
+{
+    //创建fd_entry_t
+    fd_entry_t fd_entry;
+    fd_entry.fd = fd_;         //保存mailbox.get_fd ()
+    fd_entry.events = events_; //reaper_t
+
+#if defined ZMQ_HAVE_WINDOWS
+    u_short family = get_fd_family (fd_);
+    wsa_assert (family != AF_UNSPEC);
+    family_entry_t &family_entry = family_entries [family];
+#endif
+	//将fd_加入到select()中
+    family_entry.fd_entries.push_back (fd_entry);
+    FD_SET (fd_, &family_entry.fds_set.error);
+
+#if !defined ZMQ_HAVE_WINDOWS
+    if (fd_ > maxfd)
+        maxfd = fd_;
+#endif
+
+    adjust_load (1);
+
+    return fd_;
+}
+
+zmq_connect(requester, "tcp://localhost:5555"); 连接服务器流程
+    |--int zmq_connect (void *s_, const char *addr_)  
+	  |--s->connect (addr_);
+        |--int zmq::socket_base_t::connect (const char *addr_)
+		   |--1.选择线程io_thread_t *io_thread
+		   |--2.创建address_t *paddr 
+		   |--3.创建session_base_t *session
+		   |--4.pipe_t *new_pipes [2]
+		   |--5.session->attach_pipe (new_pipes [1]) //new_pipes [2] 一个存在socket_base_t中，一个保存在session中
+		   |-- add_endpoint (addr_, (own_t *) session, newpipe);   //将session作为destination，创建cmd
+             |--void zmq::socket_base_t::add_endpoint (const char *addr_, own_t *endpoint_, pipe_t *pipe)
+			   |--launch_child (endpoint_);
+	              |--void zmq::own_t::launch_child (own_t *object_)
+				     |--send_plug (object_);   //作用：将session作为目标地址，封装plug类型的cmd，并将其放入对应线程的mailbox中
+                       |--void zmq::object_t::send_plug (own_t *destination_, bool inc_seqnum_)
+					      |--command_t cmd;
+							cmd.destination = destination_;  //destination_为传入的session
+							cmd.type = command_t::plug;
+					      |-- send_command (cmd);
+                            |--void zmq::object_t::send_command (command_t &cmd_)
+							   |--ctx->send_command (cmd_.destination->get_tid (), cmd_);
+                                  |--void zmq::ctx_t::send_command (uint32_t tid_, const command_t &command_)
+                                       |--slots [tid_]->send (command_);
+                                             |--void zmq::mailbox_t::send (const command_t &cmd_)
+                                                   |--cpipe.write (cmd_, false);
+                                                         |--queue.back () = value_;  //将session作为目标地址，获取session所在线程id的mailbox，将cmd放入mailbox的队列中
+			        |--send_own (this, object_)     //作用：将socket_base_t this作为目标地址，封装own类型的cmd，并将其放入对应线程的mailbox中
+					   |--void zmq::object_t::send_own (own_t *destination_, own_t *object_)
+					       |--command_t cmd;
+								cmd.destination = destination_; //destination_为传入的session
+								cmd.type = command_t::own;
+								cmd.args.own.object = object_;
+								send_command (cmd);
+								    |--void zmq::object_t::send_command (command_t &cmd_)  //和上面的存入队列一样
+									   |--ctx->send_command (cmd_.destination->get_tid (), cmd_);
+										  |--void zmq::ctx_t::send_command (uint32_t tid_, const command_t &command_)
+											   |--slots [tid_]->send (command_);
+													 |--void zmq::mailbox_t::send (const command_t &cmd_)
+														   |--cpipe.write (cmd_, false);
+																 |--queue.back () = value_;  //将session作为目标地址，获取session所在线程id的mailbox，将cmd放入mailbox的队列中
+
+
+
+
+zmq_send(requester, "Hello", 5, 0);流程
+    |--int zmq_send (void *s_, const void *buf_, size_t len_, int flags_)
+	    |--zmq_msg_init_size (&msg, len_)
+		|--memcpy (zmq_msg_data (&msg), buf_, len_);  //将数据拷贝到msg中
+		|--int rc = s_sendmsg (s, &msg, flags_);      //s为zmq::socket_base_t *s = as_socket_base_t (s_);
+		       |--int rc = s_->send ((zmq::msg_t *) msg_, flags_);
+				   |--int zmq::socket_base_t::send (msg_t *msg_, int flags_) 
+					 |--s_sendmsg (zmq::socket_base_t *s_, zmq_msg_t *msg_, int flags_)
+						|--int rc = process_commands (0, true);
+						   |--int zmq::socket_base_t::process_commands (int timeout_, bool throttle_)
+								|--rc = mailbox->recv (&cmd, 0);   //检查此线程是否有任何挂起的命令
+									 |--int rc = signaler.wait (timeout_);  //等待来自命令发送器的信号
+										  |-- int rc = select (0, &fds, NULL, NULL,timeout_ >= 0 ? &timeout : NULL); //windows的select函数
+									 |--const bool ok = cpipe.read (cmd_);
+								|--while (rc == 0) {
+										cmd.destination->process_command (cmd);
+											 |--process_own (cmd_.args.own.object);
+													  |--owned.insert (object_);  //保存object
+											 |--process_seqnum ();
+										rc = mailbox->recv (&cmd, 0);
+								   }
+					   |--rc = xsend (msg_);   发送消息 虚函数，从基类socket_base_t调用到子类req_t： req_t->dealer_t->socket_base_t
+						  |--int zmq::req_t::xsend (msg_t *msg_)
+							 |--int rc = dealer_t::xsend (msg_)
+								|--sendpipe (msg_, NULL);
+								   |--lb.sendpipe (msg_, pipe_);    //lb_t lb  inbound pipe
+									   |--pipes [current]->write (msg_)  //将msg写进队列
+										   |--outpipe->write (*msg_, more);
+
+当队里插入msg，在flush中会发送信号，通知创建cmd
+pipes [current]->flush ();
+|--void zmq::pipe_t::flush ()
+	{
+		//  The peer does not exist anymore at this point.
+		if (state == term_ack_sent)
+			return;
+		if (outpipe && !outpipe->flush ())
+			send_activate_read (peer);
+			|--void zmq::object_t::send_activate_read (pipe_t *destination_)
+				|--command_t cmd;
+					cmd.destination = destination_;
+					cmd.type = command_t::activate_read;
+					send_command (cmd);
+					|--void zmq::object_t::send_command (command_t &cmd_)
+						|--ctx->send_command (cmd_.destination->get_tid (), cmd_);
+							|--void zmq::ctx_t::send_command (uint32_t tid_, const command_t &command_)
+								|--slots [tid_]->send (command_);
+									|--void zmq::mailbox_t::send (const command_t &cmd_)
+									   |--cpipe.write (cmd_, false);
+
+zmq_send是将msg发送到inbound pipe中，接下来在线程中engine会通过session从lb中读取msg，然后编码发送
+static unsigned int __stdcall thread_routine (void *arg_)    //线程
+    |-- zmq::thread_t *self = (zmq::thread_t*) arg_;  //获取参数
+        self->tfn (self->arg);
+		|--void zmq::select_t::worker_routine (void *arg_)
+             ((select_t *) arg_)->loop ();
+			|--void zmq::select_t::loop ()
+			    |-- select_family_entry (family_entry, 0, timeout > 0, tv);
+				    |--trigger_events (fd_entries, local_fds_set, rc);
+					   |--current_fd_entry.events->in_event ();
+					       |--void zmq::io_thread_t::in_event ()
+						        |--command_t cmd;
+					            |--int rc = mailbox.recv (&cmd, 0);
+					            |--cmd.destination->process_command (cmd);      //cmd中包含目标地址，类型
+						            |--void zmq::object_t::process_command (command_t &cmd_)
+                                          process_activate_read ()   //cmd.type为command_t::activate_read,进行读操作
+                                        |--void zmq::pipe_t::process_activate_read ()
+										    |--sink->read_activated (this);     //i_pipe_events *sink;
+											     |--void zmq::session_base_t::read_activated (pipe_t *pipe_)
+												     |--engine->restart_output ();
+													     |--void zmq::stream_engine_t::restart_output ()
+														     out_event ();
+															 |--void zmq::stream_engine_t::out_event ()
+															    |--if ((this->*next_msg) (&tx_msg) == -1)
+																   |--int zmq::stream_engine_t::pull_and_encode (msg_t *msg_)
+																      |--if (session->pull_msg (msg_) == -1)
+																	     |--int zmq::session_base_t::pull_msg (msg_t *msg_)
+																		    |--if (!pipe || !pipe->read (msg_)) {
+																			    |--bool zmq::pipe_t::read (msg_t *msg_)
+																				   |--  if (!inpipe->read (msg_)) {
+																				       |--*value_ = queue.front ();      //从管道中读取msg
+                                                                 |--encoder->load_msg (&tx_msg); //对获取的消息进行编码 
+																      |--void zmq::v2_encoder_t::message_ready ()   //进行状态机  
+																 |-- const int nbytes = tcp_write (s, outpos, outsize); //通过tcp发送
+																     |-- int nbytes = send (s_, (char*) data_, (int) size_, 0); 内存为：01 00 00 05 48 65 6c 6c 6f  ....Hello  共9个字节
+
+
+
+zmq_recv(requester, buffer, 10, 0);流程
+    |--int nbytes = s_recvmsg (s, &msg, flags_);
+	    |--static int s_recvmsg (zmq::socket_base_t *s_, zmq_msg_t *msg_, int flags_)
+		    |--int rc = s_->recv ((zmq::msg_t *) msg_, flags_);
+			    |--int zmq::socket_base_t::recv (msg_t *msg_, int flags_)
+				    |--int rc = xrecv (msg_);
+					     |--int zmq::req_t::xrecv (msg_t *msg_)
+						     |--int rc = recv_reply_pipe (msg_);
+							     |--int zmq::req_t::recv_reply_pipe (msg_t *msg_)
+								    |--int rc = dealer_t::recvpipe (msg_, &pipe);
+									    |--zmq::dealer_t::recvpipe (msg_t *msg_, pipe_t **pipe_)
+										   |--return fq.recvpipe (msg_, pipe_);
+										       |--bool fetched = pipes [current]->read (msg_);
+		            |-- if (unlikely (process_commands (block ? timeout : 0, false) != 0))
+					    |--int zmq::socket_base_t::process_commands (int timeout_, bool throttle_)
+						    |--rc = mailbox->recv (&cmd, timeout_);
+							   |--int zmq::mailbox_t::recv (command_t *cmd_, int timeout_)
+							       |--int rc = signaler.wait (timeout_);  //等待来自命令发送器的信号
+								      |-- int rc = select (0, &fds, NULL, NULL,timeout_ >= 0 ? &timeout : NULL); //windows的select函数
+									  ............
+									  进入线程循环
+									  static unsigned int __stdcall thread_routine (void *arg_)
+									   self->tfn (self->arg);
+									   |--void zmq::select_t::worker_routine (void *arg_)
+									       |--((select_t *) arg_)->loop ();
+									          |--void zmq::select_t::loop ()
+											       |--while (!stopping)
+
+
+创建的mailbox的存放在ctx中，通过线程id来获取
+void zmq::ctx_t::send_command (uint32_t tid_, const command_t &command_)
+{
+    slots [tid_]->send (command_);
+}
+
+编码流程：
+void zmq::stream_engine_t::out_event ()
+   |--while (outsize < (size_t) out_batch_size) {
+            if ((this->*next_msg) (&tx_msg) == -1)
+                break;
+            encoder->load_msg (&tx_msg);
+            unsigned char *bufptr = outpos + outsize;
+            size_t n = encoder->encode (&bufptr, out_batch_size - outsize); //编码
+            zmq_assert (n > 0);
+            if (outpos == NULL)
+                outpos = bufptr;
+            outsize += n;
+        }
+
+		inline size_t encode (unsigned char **data_, size_t size_)
+		    |--while (pos < buffersize) {
+			   if (!to_write) {
+                    (static_cast <T*> (this)->*next) ();  //执行状态机，将msg的数据写到char *buffer中
+                }
+				size_t to_copy = std::min (to_write, buffersize - pos);
+                memcpy (buffer + pos, write_pos, to_copy); //数据拷贝
+                pos += to_copy;
+                write_pos += to_copy;
+                to_write -= to_copy;
+            }
+
+
+zmq_send的流程，主线程创建msg放入队列，msg在flush的时候创建cmd并放入另外一个队列中，然后io_thread的engine从队列中拿到cmd，再从msg的队列中拿到msg，将msg进行编码，编码成char *的字符数组，然后通过tcp send出去
+
+parents[0] = req_t
+parents[1] = session
+
+pipes_[0] = pipe_t(req_t, ypipe_t1,ypipe_t2)
+pipes_[1] = pipe_t(session, ypipe_t2,ypipe_t1)
+
+pipes_ [0]->set_peer (pipes_ [1]);
+pipes_ [1]->set_peer (pipes_ [0]);
