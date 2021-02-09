@@ -383,6 +383,7 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
     int sid = ((int) max_socket_id.add (1)) + 1;
 
     //  Create the socket and register its mailbox.
+    //socekt_base_t中保存着slot，在后续发送cmd的时候，会通过slot找到对应mailbox
     socket_base_t *s = socket_base_t::create (type_, this, slot, sid);
     if (!s) {
         empty_slots.push_back (slot);

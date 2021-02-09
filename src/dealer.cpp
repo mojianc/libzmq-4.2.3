@@ -50,6 +50,7 @@ void zmq::dealer_t::xattach_pipe (pipe_t *pipe_, bool subscribe_to_all_)
 
     zmq_assert (pipe_);
 
+    //每次连接成功，发送一个空msg
     if (probe_router) {
         msg_t probe_msg_;
         int rc = probe_msg_.init ();
@@ -62,7 +63,7 @@ void zmq::dealer_t::xattach_pipe (pipe_t *pipe_, bool subscribe_to_all_)
         rc = probe_msg_.close ();
         errno_assert (rc == 0);
     }
-
+    //lb和fq记录的是同样的pipe_，pipe_是双向管道
     fq.attach (pipe_);
     lb.attach (pipe_);
 }
@@ -70,14 +71,16 @@ void zmq::dealer_t::xattach_pipe (pipe_t *pipe_, bool subscribe_to_all_)
 int zmq::dealer_t::xsetsockopt (int option_, const void *optval_,
     size_t optvallen_)
 {
+    //如果optvallen是4，则*optval_指针所指向的数据为int值
     bool is_int = (optvallen_ == sizeof (int));
     int value = 0;
+    //将optval_按int类型取值
     if (is_int) memcpy(&value, optval_, sizeof (int));
 
     switch (option_) {
         case ZMQ_PROBE_ROUTER:
             if (is_int && value >= 0) {
-                probe_router = (value != 0);
+                probe_router = (value != 0); //设置连接成功时，是否发送空msg
                 return 0;
             }
             break;

@@ -43,7 +43,7 @@ zmq::own_t::own_t (class ctx_t *parent_, uint32_t tid_) :
 }
 
 zmq::own_t::own_t (io_thread_t *io_thread_, const options_t &options_) :
-    object_t (io_thread_),
+    object_t (io_thread_),  //记录tid
     options (options_),
     terminating (false),
     sent_seqnum (0),

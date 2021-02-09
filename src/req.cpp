@@ -65,6 +65,7 @@ int zmq::req_t::xsend (msg_t *msg_)
 {
     //  If we've sent a request and we still haven't got the reply,
     //  we can't send another request unless the strict option is disabled.
+    //如果前一个请求还没有收到回复，不能发送另一个请求
     if (receiving_reply) {
         if (strict) {
             errno = EFSM;
@@ -93,7 +94,7 @@ int zmq::req_t::xsend (msg_t *msg_)
                 free_id, NULL);
             errno_assert (rc == 0);
             id.set_flags (msg_t::more);
-
+            //reply_pipe记录发送msg的管道
             rc = dealer_t::sendpipe (&id, &reply_pipe);
             if (rc != 0)
                 return -1;
@@ -102,8 +103,9 @@ int zmq::req_t::xsend (msg_t *msg_)
         msg_t bottom;
         int rc = bottom.init ();
         errno_assert (rc == 0);
+        //设置more标记
         bottom.set_flags (msg_t::more);
-
+        //发送一个空消息，表示第一个msg
         rc = dealer_t::sendpipe (&bottom, &reply_pipe);
         if (rc != 0)
             return -1;
@@ -116,6 +118,7 @@ int zmq::req_t::xsend (msg_t *msg_)
         //   REQ sends request to A, A replies, B replies too.
         //   A's reply was first and matches, that is used.
         //   An hour later REQ sends a request to B. B's old reply is used.
+        //在发送请求之前，清除激活管道中的无效msg
         msg_t drop;
         while (true) {
             rc = drop.init ();
@@ -128,12 +131,13 @@ int zmq::req_t::xsend (msg_t *msg_)
     }
 
     bool more = msg_->flags () & msg_t::more ? true : false;
-
+    //发送真正的msg
     int rc = dealer_t::xsend (msg_);
     if (rc != 0)
         return rc;
 
     //  If the request was fully sent, flip the FSM into reply-receiving state.
+    //如果请求被全部发送，将FSM切换到“接受回复”状态
     if (!more) {
         receiving_reply = true;
         message_begins = true;
@@ -145,6 +149,7 @@ int zmq::req_t::xsend (msg_t *msg_)
 int zmq::req_t::xrecv (msg_t *msg_)
 {
     //  If request wasn't send, we can't wait for reply.
+    //如果请求还没有发送完，不能接受回复
     if (!receiving_reply) {
         errno = EFSM;
         return -1;

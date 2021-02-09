@@ -385,6 +385,7 @@ void zmq::session_base_t::process_attach (i_engine *engine_)
     zmq_assert (engine_ != NULL);
 
     //  Create the pipe if it does not exist yet.
+    //创建双向管道
     if (!pipe && !is_terminating ()) {
         object_t *parents [2] = {this, socket};
         pipe_t *pipes [2] = {NULL, NULL};
@@ -410,12 +411,15 @@ void zmq::session_base_t::process_attach (i_engine *engine_)
         pipe = pipes [0];
 
         //  Ask socket to plug into the remote end of the pipe.
+        //将管道的另一端绑定到socket中
+        //通过cmd，调用zmq::socket_base_t::process_bind (pipe_t *pipe_)
         send_bind (socket, pipes [1]);
     }
 
     //  Plug in the engine.
     zmq_assert (!engine);
     engine = engine_;
+    //egine 加入poller监视，并创建加解码方式
     engine->plug (io_thread, this);
 }
 
@@ -568,6 +572,7 @@ void zmq::session_base_t::start_connecting (bool wait_)
                 new (std::nothrow) socks_connecter_t (
                     io_thread, this, options, addr, proxy_address, wait_);
             alloc_assert (connecter);
+            //通过cmd，调用zmq::socks_connecter_t::process_plug ()
             launch_child (connecter);
         }
         else {

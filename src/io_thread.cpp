@@ -39,9 +39,11 @@
 zmq::io_thread_t::io_thread_t (ctx_t *ctx_, uint32_t tid_) :
     object_t (ctx_, tid_)
 {
+    //每个io_thread都有一个poller
     poller = new (std::nothrow) poller_t (*ctx_);
     alloc_assert (poller);
-
+    //每个io_thread都有一个mailbox，并监听io_thread的io_event
+    //poller中监视的fd是mailbox的fd，即mailbox.get_fd ()->signaler的fd
     mailbox_handle = poller->add_fd (mailbox.get_fd (), this);
     poller->set_pollin (mailbox_handle);
 }

@@ -59,8 +59,8 @@
 
 zmq::tcp_listener_t::tcp_listener_t (io_thread_t *io_thread_,
       socket_base_t *socket_, const options_t &options_) :
-    own_t (io_thread_, options_),
-    io_object_t (io_thread_),
+    own_t (io_thread_, options_),//记录tid
+    io_object_t (io_thread_),   //保存poller
     s (retired_fd),
     handle((handle_t)NULL),
     socket (socket_)
@@ -121,7 +121,10 @@ void zmq::tcp_listener_t::in_event ()
         options, NULL);
     errno_assert (session);
     session->inc_seqnum ();
+    //通过cmd，调用zmq::session_base_t::process_plug ()
     launch_child (session);
+    //将session和engine进行绑定
+    //通过cmd，调用zmq::session_base_t::process_attach (i_engine *engine_)
     send_attach (session, engine, false);
     socket->event_accepted (endpoint, (int) fd);
 }
@@ -176,6 +179,7 @@ int zmq::tcp_listener_t::set_address (const char *addr_)
     }
 
     //  Create a listening socket.
+    //创建socket
     s = open_socket (address.family (), SOCK_STREAM, IPPROTO_TCP);
 
     //  IPv6 address family not supported, try automatic downgrade to IPv4.
@@ -234,6 +238,7 @@ int zmq::tcp_listener_t::set_address (const char *addr_)
 #endif
 
     //  Bind the socket to the network interface and port.
+    //绑定ip
     rc = bind (s, address.addr (), address.addrlen ());
 #ifdef ZMQ_HAVE_WINDOWS
     if (rc == SOCKET_ERROR) {
@@ -246,6 +251,7 @@ int zmq::tcp_listener_t::set_address (const char *addr_)
 #endif
 
     //  Listen for incoming connections.
+    //监听
     rc = listen (s, options.backlog);
 #ifdef ZMQ_HAVE_WINDOWS
     if (rc == SOCKET_ERROR) {

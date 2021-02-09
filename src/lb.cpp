@@ -48,7 +48,9 @@ zmq::lb_t::~lb_t ()
 
 void zmq::lb_t::attach (pipe_t *pipe_)
 {
+    //添加pipe_t
     pipes.push_back (pipe_);
+    //当前添加的pipe_t为激活状态
     activated (pipe_);
 }
 
@@ -58,11 +60,13 @@ void zmq::lb_t::pipe_terminated (pipe_t *pipe_)
 
     //  If we are in the middle of multipart message and current pipe
     //  have disconnected, we have to drop the remainder of the message.
+    //pipe_被关闭，如果数据发送到一部分，则剩余的数据记录为drop
     if (index == current && more)
         dropping = true;
 
     //  Remove the pipe from the list; adjust number of active pipes
     //  accordingly.
+    //移除被关闭的pipe_
     if (index < active) {
         active--;
         pipes.swap (index, active);
@@ -75,6 +79,7 @@ void zmq::lb_t::pipe_terminated (pipe_t *pipe_)
 void zmq::lb_t::activated (pipe_t *pipe_)
 {
     //  Move the pipe to the list of active pipes.
+    //当前的管道为激活状态
     pipes.swap (pipes.index (pipe_), active);
     active++;
 }
@@ -88,6 +93,7 @@ int zmq::lb_t::sendpipe (msg_t *msg_, pipe_t **pipe_)
 {
     //  Drop the message if required. If we are at the end of the message
     //  switch back to non-dropping mode.
+    //如果正在发送的管道被关闭
     if (dropping) {
 
         more = msg_->flags () & msg_t::more ? true : false;
@@ -103,14 +109,18 @@ int zmq::lb_t::sendpipe (msg_t *msg_, pipe_t **pipe_)
     while (active > 0) {
         if (pipes [current]->write (msg_))
         {
+            //发送成功
             if (pipe_)
                 *pipe_ = pipes [current];
             break;
         }
 
+        //以下是发送失败
+
         // If send fails for multi-part msg rollback other
         // parts sent earlier and return EAGAIN.
         // Application should handle this as suitable
+        //如果发送失败，管道中的msg会被回滚
         if (more)
         {
             pipes [current]->rollback ();
@@ -134,10 +144,11 @@ int zmq::lb_t::sendpipe (msg_t *msg_, pipe_t **pipe_)
 
     //  If it's final part of the message we can flush it downstream and
     //  continue round-robining (load balance).
+    //第一次发送一般是个空msg，more为true；第二次发送的是真正的msg，more为false，所以会pipe->flush()
     more = msg_->flags () & msg_t::more? true: false;
     if (!more) {
         pipes [current]->flush ();
-
+        //负载均衡，current自增
         if (++current >= active)
             current = 0;
     }
@@ -153,16 +164,19 @@ bool zmq::lb_t::has_out ()
 {
     //  If one part of the message was already written we can definitely
     //  write the rest of the message.
+    //如果管道已经写入一部分，那么需要尽量写入余下的部分
     if (more)
         return true;
 
     while (active > 0) {
 
         //  Check whether a pipe has room for another message.
+        //检测当前的管道是否可以写入msg
         if (pipes [current]->check_write ())
             return true;
 
         //  Deactivate the pipe.
+        //当前的管道已经写满，切换另一个管道
         active--;
         pipes.swap (current, active);
         if (current == active)

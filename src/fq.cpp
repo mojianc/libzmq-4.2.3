@@ -107,6 +107,7 @@ int zmq::fq_t::recvpipe (msg_t *msg_, pipe_t **pipe_)
             more = msg_->flags () & msg_t::more? true: false;
             if (!more) {
                 last_in = pipes [current];
+                //轮询
                 current = (current + 1) % active;
             }
             return 0;

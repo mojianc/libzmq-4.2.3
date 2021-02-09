@@ -78,6 +78,7 @@ namespace zmq
         lb_t lb;
 
         // if true, send an empty message to every connected router peer
+        //true：每次连接是，发送一个空msg
         bool probe_router;
 
         dealer_t (const dealer_t&);

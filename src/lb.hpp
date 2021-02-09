@@ -38,7 +38,7 @@ namespace zmq
 
     //  This class manages a set of outbound pipes. On send it load balances
     //  messages fairly among the pipes.
-
+    //发送管道的管理类，主要是负责发送时的负载均衡
     class lb_t
     {
     public:
@@ -56,6 +56,8 @@ namespace zmq
         //  It is possible for this function to return success but keep pipe_
         //  unset if the rest of a multipart message to a terminated pipe is
         //  being dropped. For the first frame, this will never happen.
+        //发送消息，并记录正在被使用的pipe
+        //
         int sendpipe (msg_t *msg_, pipe_t **pipe_);
 
         bool has_out ();
@@ -63,6 +65,7 @@ namespace zmq
     private:
 
         //  List of outbound pipes.
+        //管道列表
         typedef array_t <pipe_t, 2> pipes_t;
         pipes_t pipes;
 
@@ -71,12 +74,15 @@ namespace zmq
         pipes_t::size_type active;
 
         //  Points to the last pipe that the most recent message was sent to.
+        //指向最近发送数据的管道
         pipes_t::size_type current;
 
         //  True if last we are in the middle of a multipart message.
+        //true:最新发送的数据是多段msg的中间部分
         bool more;
 
         //  True if we are dropping current message.
+        //当前发送消息取消
         bool dropping;
 
         lb_t (const lb_t&);

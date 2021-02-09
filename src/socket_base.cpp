@@ -614,6 +614,8 @@ int zmq::socket_base_t::bind (const char *addr_)
     }
 
     if (protocol == "tcp") {
+        //listener中记录的tid是io_thread
+        //listener中记录的poller也是io_thread的poller
         tcp_listener_t *listener = new (std::nothrow) tcp_listener_t (
             io_thread, this, options);
         alloc_assert (listener);
@@ -627,6 +629,8 @@ int zmq::socket_base_t::bind (const char *addr_)
         // Save last endpoint URI
         listener->get_address (last_endpoint);
 
+        //发送cmd，listener中的tid对应的io_thread的mailbox，通过singer，io_thread::in_event会处理cmd
+        //listener的plug，主要是将listener的io_event加入到poller中,当监听到客户端的连接请求时，调用zmq::tcp_listener_t::in_event ()
         add_endpoint (last_endpoint.c_str (), (own_t *) listener, NULL);
         options.connected = true;
         return 0;

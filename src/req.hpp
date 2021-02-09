@@ -60,31 +60,38 @@ namespace zmq
 
         //  Receive only from the pipe the request was sent to, discarding
         //  frames from other pipes.
+        //只从发送请求的管道接收，丢弃来自其他管道的帧
         int recv_reply_pipe (zmq::msg_t *msg_);
 
     private:
 
         //  If true, request was already sent and reply wasn't received yet or
         //  was received partially.
+        //true:请求已经被发送，但是还没有收到回复，或者收到部分回复
         bool receiving_reply;
 
         //  If true, we are starting to send/recv a message. The first part
         //  of the message must be empty message part (backtrace stack bottom).
+        //true:发送起始消息，msg的begin部分一般为空
         bool message_begins;
 
         //  The pipe the request was sent to and where the reply is expected.
+        //发送请求的管道，并期望收到回复
         zmq::pipe_t *reply_pipe;
 
         //  Whether request id frames shall be sent and expected.
+        //请求id是否被发送
         bool request_id_frames_enabled;
 
         //  The current request id. It is incremented every time before a new
         //  request is sent.
+        //当前请求id，每次发送请求之前都会自增
         uint32_t request_id;
 
         //  If false, send() will reset its internal state and terminate the
         //  reply_pipe's connection instead of failing if a previous request is
         //  still pending.
+        //false: 重置send()函数内部的状态，并且如果前一个请求还在等待回复，则终止reply_pipe的连接
         bool strict;
 
         req_t (const req_t&);

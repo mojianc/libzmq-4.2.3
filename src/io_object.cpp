@@ -35,6 +35,7 @@
 zmq::io_object_t::io_object_t (io_thread_t *io_thread_) :
     poller (NULL)
 {
+    //将io_thread的poller保存在io_object中
     if (io_thread_)
         plug (io_thread_);
 }
