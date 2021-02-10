@@ -400,6 +400,7 @@ void zmq::session_base_t::process_attach (i_engine *engine_)
         int hwms [2] = {conflate? -1 : options.rcvhwm,
             conflate? -1 : options.sndhwm};
         bool conflates [2] = {conflate, conflate};
+        //创建pipe_t
         int rc = pipepair (parents, pipes, hwms, conflates);
         errno_assert (rc == 0);
 

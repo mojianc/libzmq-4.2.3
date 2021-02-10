@@ -71,6 +71,7 @@ namespace zmq
 
         //  Number of active pipes. All the active pipes are located at the
         //  beginning of the pipes array.
+        //激活管道数量
         pipes_t::size_type active;
 
         //  Points to the last pipe that the most recent message was sent to.

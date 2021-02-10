@@ -94,11 +94,13 @@ namespace zmq
         pipes_t pipes;
 
         //  Number of all the pipes to send the next message to.
+        //符合发送下一条msg的pipe 数量
         pipes_t::size_type matching;
 
         //  Number of active pipes. All the active pipes are located at the
         //  beginning of the pipes array. These are the pipes the messages
         //  can be sent to at the moment.
+        //激活的pipe 数量
         pipes_t::size_type active;
 
         //  Number of pipes eligible for sending messages to. This includes all
@@ -106,9 +108,11 @@ namespace zmq
         //  messages to (the HWM is not yet reached), but sending a message
         //  to them would result in partial message being delivered, ie. message
         //  with initial parts missing.
+        //符合发送要求的pipe 数量
         pipes_t::size_type eligible;
 
         //  True if last we are in the middle of a multipart message.
+        //数据还没有发送完
         bool more;
 
         dist_t (const dist_t&);

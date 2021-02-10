@@ -297,79 +297,79 @@ ZMQ_EXPORT const char *zmq_msg_gets (const zmq_msg_t *msg, const char *property)
 #define ZMQ_XREP ZMQ_ROUTER
 
 /*  Socket options.                                                           */
-#define ZMQ_AFFINITY 4
+#define ZMQ_AFFINITY 4             //设置I/O线程关联
 #define ZMQ_ROUTING_ID 5
-#define ZMQ_SUBSCRIBE 6
-#define ZMQ_UNSUBSCRIBE 7
-#define ZMQ_RATE 8
-#define ZMQ_RECOVERY_IVL 9
-#define ZMQ_SNDBUF 11
-#define ZMQ_RCVBUF 12
+#define ZMQ_SUBSCRIBE 6           //建立消息过滤器
+#define ZMQ_UNSUBSCRIBE 7         //删除消息过滤器
+#define ZMQ_RATE 8                //设置多播数据速率
+#define ZMQ_RECOVERY_IVL 9        //设置多播恢复间隔
+#define ZMQ_SNDBUF 11             //设置内核发送缓冲区的大小
+#define ZMQ_RCVBUF 12             //设置内核接收缓冲区的大小
 #define ZMQ_RCVMORE 13
 #define ZMQ_FD 14
 #define ZMQ_EVENTS 15
 #define ZMQ_TYPE 16
-#define ZMQ_LINGER 17
-#define ZMQ_RECONNECT_IVL 18
-#define ZMQ_BACKLOG 19
-#define ZMQ_RECONNECT_IVL_MAX 21
-#define ZMQ_MAXMSGSIZE 22
-#define ZMQ_SNDHWM 23
-#define ZMQ_RCVHWM 24
-#define ZMQ_MULTICAST_HOPS 25
-#define ZMQ_RCVTIMEO 27
-#define ZMQ_SNDTIMEO 28
+#define ZMQ_LINGER 17               //设置套接字关闭的延迟时间
+#define ZMQ_RECONNECT_IVL 18        //设置重新连接间隔
+#define ZMQ_BACKLOG 19              //设置未完成连接队列的最大长度
+#define ZMQ_RECONNECT_IVL_MAX 21    //设置最大重新连接间隔
+#define ZMQ_MAXMSGSIZE 22           //可接受的最大入站邮件大小
+#define ZMQ_SNDHWM 23               //为出站消息设置高水位线
+#define ZMQ_RCVHWM 24               //为入站消息设置高水位线
+#define ZMQ_MULTICAST_HOPS 25       //组播数据包的最大网络跳数
+#define ZMQ_RCVTIMEO 27             //使用EAGAIN返回recv操作之前的最长时间
+#define ZMQ_SNDTIMEO 28             //使用EAGAIN返回发送操作之前的最长时间
 #define ZMQ_LAST_ENDPOINT 32
 #define ZMQ_ROUTER_MANDATORY 33
-#define ZMQ_TCP_KEEPALIVE 34
-#define ZMQ_TCP_KEEPALIVE_CNT 35
-#define ZMQ_TCP_KEEPALIVE_IDLE 36
+#define ZMQ_TCP_KEEPALIVE 34         //覆盖SO_KEEPALIVE套接字选项
+#define ZMQ_TCP_KEEPALIVE_CNT 35     //覆盖TCP_KEEPCNT套接字选项
+#define ZMQ_TCP_KEEPALIVE_IDLE 36    //覆盖TCP_KEEPIDLE（或某些操作系统上的TCP_KEEPALIVE）
 #define ZMQ_TCP_KEEPALIVE_INTVL 37
 #define ZMQ_IMMEDIATE 39
-#define ZMQ_XPUB_VERBOSE 40
-#define ZMQ_ROUTER_RAW 41
-#define ZMQ_IPV6 42
+#define ZMQ_XPUB_VERBOSE 40          //在XPUB套接字上传递重复的订阅消息
+#define ZMQ_ROUTER_RAW 41            //将ROUTER套接字切换到原始模式
+#define ZMQ_IPV6 42                  //在套接字上启用IPv6
 #define ZMQ_MECHANISM 43
-#define ZMQ_PLAIN_SERVER 44
-#define ZMQ_PLAIN_USERNAME 45
-#define ZMQ_PLAIN_PASSWORD 46
-#define ZMQ_CURVE_SERVER 47
-#define ZMQ_CURVE_PUBLICKEY 48
-#define ZMQ_CURVE_SECRETKEY 49
-#define ZMQ_CURVE_SERVERKEY 50
-#define ZMQ_PROBE_ROUTER 51
-#define ZMQ_REQ_CORRELATE 52
-#define ZMQ_REQ_RELAXED 53
-#define ZMQ_CONFLATE 54
-#define ZMQ_ZAP_DOMAIN 55
-#define ZMQ_ROUTER_HANDOVER 56
-#define ZMQ_TOS 57
-#define ZMQ_CONNECT_ROUTING_ID 61
-#define ZMQ_GSSAPI_SERVER 62
-#define ZMQ_GSSAPI_PRINCIPAL 63
-#define ZMQ_GSSAPI_SERVICE_PRINCIPAL 64
-#define ZMQ_GSSAPI_PLAINTEXT 65
-#define ZMQ_HANDSHAKE_IVL 66
-#define ZMQ_SOCKS_PROXY 68
-#define ZMQ_XPUB_NODROP 69
+#define ZMQ_PLAIN_SERVER 44          //设置PLAIN服务器角色
+#define ZMQ_PLAIN_USERNAME 45        //设置PLAIN安全用户名
+#define ZMQ_PLAIN_PASSWORD 46        //设置PLAIN安全密码
+#define ZMQ_CURVE_SERVER 47          //设置CURVE服务器角色
+#define ZMQ_CURVE_PUBLICKEY 48       //设置CURVE公钥
+#define ZMQ_CURVE_SECRETKEY 49       //ZMQ_CURVE_SECRETKEY
+#define ZMQ_CURVE_SERVERKEY 50       //设置CURVE服务器密钥
+#define ZMQ_PROBE_ROUTER 51          //到ROUTER套接字的引导连接
+#define ZMQ_REQ_CORRELATE 52         //匹配请求的答复
+#define ZMQ_REQ_RELAXED 53           //放松请求和答复之间的严格交替
+#define ZMQ_CONFLATE 54              //仅保留最后一条消息
+#define ZMQ_ZAP_DOMAIN 55            //设置RFC 27身份验证域
+#define ZMQ_ROUTER_HANDOVER 56       //处理ROUTER套接字上的重复客户端路由ID
+#define ZMQ_TOS 57                    //在套接字上设置服务类型
+#define ZMQ_CONNECT_ROUTING_ID 61     //分配下一个出站路由ID
+#define ZMQ_GSSAPI_SERVER 62           //设置GSSAPI服务器角色
+#define ZMQ_GSSAPI_PRINCIPAL 63        //设置GSSAPI主体的名称
+#define ZMQ_GSSAPI_SERVICE_PRINCIPAL 64//设置GSSAPI服务主体的名称
+#define ZMQ_GSSAPI_PLAINTEXT 65        //禁用GSSAPI加密
+#define ZMQ_HANDSHAKE_IVL 66           //设置最大握手间隔
+#define ZMQ_SOCKS_PROXY 68             //设置SOCKS5代理地址
+#define ZMQ_XPUB_NODROP 69             //如果到达SENDHWM，请不要静默丢弃消息
 #define ZMQ_BLOCKY 70
-#define ZMQ_XPUB_MANUAL 71
-#define ZMQ_XPUB_WELCOME_MSG 72
-#define ZMQ_STREAM_NOTIFY 73
-#define ZMQ_INVERT_MATCHING 74
-#define ZMQ_HEARTBEAT_IVL 75
-#define ZMQ_HEARTBEAT_TTL 76
-#define ZMQ_HEARTBEAT_TIMEOUT 77
-#define ZMQ_XPUB_VERBOSER 78
-#define ZMQ_CONNECT_TIMEOUT 79
-#define ZMQ_TCP_MAXRT 80
+#define ZMQ_XPUB_MANUAL 71               //将订阅处理更改为手动
+#define ZMQ_XPUB_WELCOME_MSG 72          //设置用户连接时将收到的欢迎消息
+#define ZMQ_STREAM_NOTIFY 73             //发送连接和断开连接通知
+#define ZMQ_INVERT_MATCHING 74           //反转消息过滤
+#define ZMQ_HEARTBEAT_IVL 75             //设置发送ZMTP心跳的间隔
+#define ZMQ_HEARTBEAT_TTL 76             //设置ZMTP心跳的TTL值
+#define ZMQ_HEARTBEAT_TIMEOUT 77         //设置ZMTP心跳超时
+#define ZMQ_XPUB_VERBOSER 78             //在XPUB套接字上传递重复的订阅和取消订阅消息
+#define ZMQ_CONNECT_TIMEOUT 79           //设置connect（）超时
+#define ZMQ_TCP_MAXRT 80                 //设置TCP最大重传超时
 #define ZMQ_THREAD_SAFE 81
-#define ZMQ_MULTICAST_MAXTPDU 84
-#define ZMQ_VMCI_BUFFER_SIZE 85
-#define ZMQ_VMCI_BUFFER_MIN_SIZE 86
-#define ZMQ_VMCI_BUFFER_MAX_SIZE 87
+#define ZMQ_MULTICAST_MAXTPDU 84         //组播数据包的最大传输数据单元大小
+#define ZMQ_VMCI_BUFFER_SIZE 85          //设置VMCI套接字的缓冲区大小
+#define ZMQ_VMCI_BUFFER_MIN_SIZE 86      //设置VMCI套接字的最小缓冲区大小
+#define ZMQ_VMCI_BUFFER_MAX_SIZE 87      //设置VMCI套接字的最大缓冲区大小
 #define ZMQ_VMCI_CONNECT_TIMEOUT 88
-#define ZMQ_USE_FD 89
+#define ZMQ_USE_FD 89                     //设置预分配的套接字文件描述符
 
 /*  Message options                                                           */
 #define ZMQ_MORE 1
@@ -389,16 +389,16 @@ ZMQ_EXPORT const char *zmq_msg_gets (const zmq_msg_t *msg, const char *property)
 #define ZMQ_GROUP_MAX_LENGTH        15
 
 /*  Deprecated options and aliases                                            */
-#define ZMQ_IDENTITY                ZMQ_ROUTING_ID
-#define ZMQ_CONNECT_RID             ZMQ_CONNECT_ROUTING_ID
-#define ZMQ_TCP_ACCEPT_FILTER       38
-#define ZMQ_IPC_FILTER_PID          58
-#define ZMQ_IPC_FILTER_UID          59
-#define ZMQ_IPC_FILTER_GID          60
-#define ZMQ_IPV4ONLY                31
+#define ZMQ_IDENTITY                ZMQ_ROUTING_ID             //设置套接字路由ID
+#define ZMQ_CONNECT_RID             ZMQ_CONNECT_ROUTING_ID     //分配下一个出站连接ID
+#define ZMQ_TCP_ACCEPT_FILTER       38                         //分配过滤器以允许新的TCP连接
+#define ZMQ_IPC_FILTER_PID          58                         //分配进程ID过滤器以允许新的IPC连接
+#define ZMQ_IPC_FILTER_UID          59                         //分配用户ID过滤器以允许新的IPC连接
+#define ZMQ_IPC_FILTER_GID          60                         //分配组ID过滤器以允许新的IPC连接
+#define ZMQ_IPV4ONLY                31                         //仅在套接字上使用IPv4
 #define ZMQ_DELAY_ATTACH_ON_CONNECT ZMQ_IMMEDIATE
 #define ZMQ_NOBLOCK                 ZMQ_DONTWAIT
-#define ZMQ_FAIL_UNROUTABLE         ZMQ_ROUTER_MANDATORY
+#define ZMQ_FAIL_UNROUTABLE         ZMQ_ROUTER_MANDATORY        //仅在ROUTER套接字上接受可路由消息
 #define ZMQ_ROUTER_BEHAVIOR         ZMQ_ROUTER_MANDATORY
 
 /*  Deprecated Message options                                                */
@@ -567,9 +567,9 @@ ZMQ_EXPORT void zmq_threadclose (void* thread);
 
 /*  DRAFT Socket options.                                                     */
 #define ZMQ_GSSAPI_PRINCIPAL_NAMETYPE 90
-#define ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE 91
-#define ZMQ_BINDTODEVICE 92
-#define ZMQ_ZAP_ENFORCE_DOMAIN 93
+#define ZMQ_GSSAPI_SERVICE_PRINCIPAL_NAMETYPE 91    //设置主体的名称类型
+#define ZMQ_BINDTODEVICE 92                         //设置将套接字绑定到的设备的名称
+#define ZMQ_ZAP_ENFORCE_DOMAIN 93                   //设置ZAP域处理以严格遵守RFC
 
 /*  DRAFT 0MQ socket events and monitoring                                    */
 /*  Unspecified system errors during handshake. Event value is an errno.      */
